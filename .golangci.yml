@@ -1,0 +1,7 @@
+# This file contains all available configuration options
+# with their default values.
+
+# options for analysis running
+run:
+  skip-dirs:
+    - sha3
