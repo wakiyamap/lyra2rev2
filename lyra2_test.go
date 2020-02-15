@@ -34,6 +34,24 @@ import (
 	"testing"
 )
 
+func TestLyra2(t *testing.T) {
+	correct, err := hex.DecodeString("57298a8db7a59316a7edfb7ec93f2e26e561a9b05f76bc15798c58f98aa92341")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	data := make([]byte, 80)
+	copy(data, []byte("test"))
+	result := make([]byte, 32)
+	lyra2(result, data, data, 2, 4, 4)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(correct, result) {
+		t.Error("not match")
+	}
+}
+
 func TestLyra2re2(t *testing.T) {
 	correct, err := hex.DecodeString("5f21d7763b1ae8fc87db7dc993ddc50468765729411ba6b24906de15851a4abf")
 	if err != nil {
