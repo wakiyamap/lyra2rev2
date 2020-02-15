@@ -17,7 +17,7 @@ which are also included in this library.
 This requires
 
 * git
-* go 1.11+
+* go 1.13+
 
 
 ## Installation
