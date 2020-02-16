@@ -1,5 +1,5 @@
-[![Build Status](https://travis-ci.org/bitgoin/lyra2rev2.svg?branch=master)](https://travis-ci.org/bitgoin/lyra2rev2)
-[![GoDoc](https://godoc.org/github.com/bitgoin/lyra2rev2?status.svg)](https://godoc.org/github.com/bitgoin/lyra2rev2)
+[![Build Status](https://travis-ci.org/wakiyamap/lyra2rev2.svg?branch=master)](https://travis-ci.org/wakiyamap/lyra2rev2)
+[![go.dev reference](https://img.shields.io/badge/go.dev-reference-007d9c?logo=go&logoColor=white)](https://pkg.go.dev/github.com/wakiyamap/lyra2rev2)
 [![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://raw.githubusercontent.com/bitgoin/lyra2rev2/LICENSE)
 
 
@@ -22,7 +22,7 @@ This requires
 
 ## Installation
 
-     $ go get github.com/bitgoin/lyra2rev2
+     $ go get github.com/wakiyamap/lyra2rev2
 
 
 ## Example
@@ -30,7 +30,7 @@ This requires
 
 ```go
 
-import "github.com/bitgoin/lyra2rev2"
+import "github.com/wakiyamap/lyra2rev2"
 
 func main(){
     data := []byte{0x01,0x02}
