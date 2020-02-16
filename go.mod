@@ -1,4 +1,4 @@
-module github.com/bitgoin/lyra2rev2
+module github.com/wakiyamap/lyra2rev2
 
 go 1.13
 
