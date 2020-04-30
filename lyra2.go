@@ -32,9 +32,11 @@ under MIT license.
 https://github.com/monacoinproject/monacoin/blob/master-0.10/COPYING
 */
 
-package lyra2rev2
+package lyra2rev3
 
-import "encoding/binary"
+import (
+	"encoding/binary"
+)
 
 const (
 	blockLenInt64 = 12                //Block length: 768 bits (=96 bytes, =12 uint64_t)
@@ -575,6 +577,158 @@ func lyra2(k []byte, pwd []byte, salt []byte, timeCost uint64, nRows int, nCols 
 			//------------------------------------------------------------------------------------------
 			//rowa = ((unsigned int)state[0]) & (nRows-1);	//(USE THIS IF nRows IS A POWER OF 2)
 			rowa = state[0] % uint64(nRows) //(USE THIS FOR THE "GENERIC" CASE)
+			//------------------------------------------------------------------------------------------
+
+			//Performs a reduced-round duplexing operation over M[row*] XOR M[prev], updating both M[row*] and M[row]
+			reducedDuplexRow(state, memMatrix[prev], memMatrix[rowa], memMatrix[row], nCols)
+
+			//update prev: it now points to the last row ever computed
+			prev = row
+
+			//updates row: goes to the next row to be computed
+			//------------------------------------------------------------------------------------------
+			//row = (row + step) & (nRows-1);	//(USE THIS IF nRows IS A POWER OF 2)
+			row = (row + step) % nRows //(USE THIS FOR THE "GENERIC" CASE)
+			//------------------------------------------------------------------------------------------
+		}
+	}
+	//==========================================================================/
+
+	//============================ Wrap-up Phase ===============================//
+	//Absorbs the last block of the memory matrix
+	absorbBlock(state, memMatrix[rowa])
+	//Squeezes the key
+	squeeze(state, k)
+	//==========================================================================/
+
+}
+
+func lyra2_3(k []byte, pwd []byte, salt []byte, timeCost uint64, nRows int, nCols int) {
+	//============================= Basic variables ============================//
+
+	row := 2        //index of row to be processed
+	prev := 1       //index of prev (last row ever computed/modified)
+	var rowa uint64 //index of row* (a previous row, deterministically picked during Setup and randomly picked while Wandering)
+	var index uint64
+	var tau uint64        //Time Loop iterator
+	step := 1             //Visitation step (used during Setup and Wandering phases)
+	var window uint64 = 2 //Visitation window (used to define which rows can be revisited during Setup)
+	var gap uint64 = 1    //Modifier to the step, assuming the values 1 or -1
+	var i int             //auxiliary iteration counter
+	//==========================================================================/
+
+	//========== Initializing the Memory Matrix and pointers to it =============//
+	//Tries to allocate enough space for the whole memory matrix
+
+	rowLenInt64 := blockLenInt64 * nCols
+	//rowLenBytes := rowLenInt64 * 8
+
+	i = nRows * rowLenInt64
+	wholeMatrix := make([]uint64, i)
+	//Allocates pointers to each row of the matrix
+	memMatrix := make([][]uint64, nRows)
+
+	//Places the pointers in the correct positions
+	ptrWord := 0
+	for i = 0; i < nRows; i++ {
+		memMatrix[i] = wholeMatrix[ptrWord:]
+		ptrWord += rowLenInt64
+	}
+	//==========================================================================/
+
+	//============= Getting the password + salt + basil padded with 10*1 ===============//
+	//OBS.:The memory matrix will temporarily hold the password: not for saving memory,
+	//but this ensures that the password copied locally will be overwritten as soon as possible
+
+	//First, we clean enough blocks for the password, salt, basil and padding
+	nBlocksInput := ((len(salt) + len(pwd) + 6*8) / blockLenBlake2SafeBytes) + 1
+	ptrByte := 0 // (byte*) wholeMatrix;
+
+	//Prepends the password
+	for j := 0; j < len(pwd)/8; j++ {
+		wholeMatrix[ptrByte+j] = binary.LittleEndian.Uint64(pwd[j*8:])
+	}
+	ptrByte += len(pwd) / 8
+
+	//Concatenates the salt
+	for j := 0; j < len(salt)/8; j++ {
+		wholeMatrix[ptrByte+j] = binary.LittleEndian.Uint64(salt[j*8:])
+	}
+	ptrByte += len(salt) / 8
+
+	//Concatenates the basil: every integer passed as parameter, in the order they are provided by the interface
+	wholeMatrix[ptrByte] = uint64(len(k))
+	ptrByte++
+	wholeMatrix[ptrByte] = uint64(len(pwd))
+	ptrByte++
+	wholeMatrix[ptrByte] = uint64(len(salt))
+	ptrByte++
+	wholeMatrix[ptrByte] = timeCost
+	ptrByte++
+	wholeMatrix[ptrByte] = uint64(nRows)
+	ptrByte++
+	wholeMatrix[ptrByte] = uint64(nCols)
+	ptrByte++
+
+	//Now comes the padding
+	wholeMatrix[ptrByte] = 0x80 //first byte of padding: right after the password
+	//resets the pointer to the start of the memory matrix
+	ptrByte = (nBlocksInput*blockLenBlake2SafeBytes)/8 - 1 //sets the pointer to the correct position: end of incomplete block
+	wholeMatrix[ptrByte] ^= 0x0100000000000000             //last byte of padding: at the end of the last incomplete block00
+	//==========================================================================/
+
+	//======================= Initializing the Sponge State ====================//
+	//Sponge state: 16 uint64_t, BLOCK_LEN_INT64 words of them for the bitrate (b) and the remainder for the capacity (c)
+	state := initState()
+	//==========================================================================/
+
+	//================================ Setup Phase =============================//
+	//Absorbing salt, password and basil: this is the only place in which the block length is hard-coded to 512 bits
+	ptrWord = 0
+	for i = 0; i < nBlocksInput; i++ {
+		absorbBlockBlake2Safe(state, wholeMatrix[ptrWord:]) //absorbs each block of pad(pwd || salt || basil)
+		ptrWord += blockLenBlake2SafeInt64                  //goes to next block of pad(pwd || salt || basil)
+	}
+
+	//Initializes M[0] and M[1]
+	reducedSqueezeRow0(state, memMatrix[0], nCols) //The locally copied password is most likely overwritten here
+	reducedDuplexRow1(state, memMatrix[0], memMatrix[1], nCols)
+
+	for row < nRows {
+		//M[row] = rand; //M[row*] = M[row*] XOR rotW(rand)
+		reducedDuplexRowSetup(state, memMatrix[prev], memMatrix[rowa], memMatrix[row], nCols)
+
+		//updates the value of row* (deterministically picked during Setup))
+		rowa = (rowa + uint64(step)) & (window - 1)
+		//update prev: it now points to the last row ever computed
+		prev = row
+		//updates row: goes to the next row to be computed
+		row++
+
+		//Checks if all rows in the window where visited.
+		if rowa == 0 {
+			step = int(window + gap) //changes the step: approximately doubles its value
+			window *= 2              //doubles the size of the re-visitation window
+			gap = -gap               //inverts the modifier to the step
+		}
+	}
+	//==========================================================================/
+
+	//============================ Wandering Phase =============================//
+	row = 0 //Resets the visitation to the first row of the memory matrix
+	for tau = 1; tau <= timeCost; tau++ {
+		//Step is approximately half the number of all rows of the memory matrix for an odd tau; otherwise, it is -1
+		step = nRows/2 - 1
+		if tau%2 == 0 {
+			step = -1
+		}
+
+		for row0 := false; !row0; row0 = (row == 0) {
+			//Selects a pseudorandom index row*
+			//------------------------------------------------------------------------------------------
+			//rowa = ((unsigned int)state[0]) & (nRows-1);	//(USE THIS IF nRows IS A POWER OF 2)
+			index = state[index%16]
+			rowa = state[index%16] % uint64(nRows) //(USE THIS FOR THE "GENERIC" CASE)
 			//------------------------------------------------------------------------------------------
 
 			//Performs a reduced-round duplexing operation over M[row*] XOR M[prev], updating both M[row*] and M[row]

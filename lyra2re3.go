@@ -29,24 +29,25 @@
 package lyra2rev3
 
 import (
-	"bytes"
-	"encoding/hex"
-	"testing"
+	"github.com/dchest/blake256"
 )
 
-func TestLyra2re2(t *testing.T) {
-	correct, err := hex.DecodeString("5f21d7763b1ae8fc87db7dc993ddc50468765729411ba6b24906de15851a4abf")
-	if err != nil {
-		t.Fatal(err)
+//Sum returns the result of Lyra2re3 hash.
+func SumV3(data []byte) ([]byte, error) {
+	blake := blake256.New()
+	if _, err := blake.Write(data); err != nil {
+		return nil, err
 	}
+	resultBlake := blake.Sum(nil)
 
-	data := make([]byte, 80)
-	copy(data, []byte("test"))
-	result, err := Sum(data)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !bytes.Equal(correct, result) {
-		t.Error("not match")
-	}
+	lyra231result := make([]byte, 32)
+	lyra2_3(lyra231result, resultBlake, resultBlake, 1, 4, 4)
+
+	resultcube := cubehash256(lyra231result)
+
+	lyra232result := make([]byte, 32)
+	lyra2_3(lyra232result, resultcube, resultcube, 1, 4, 4)
+
+	resultbmw := bmw256(lyra232result)
+	return resultbmw, nil
 }

@@ -34,15 +34,15 @@ import (
 	"testing"
 )
 
-func TestLyra2re2(t *testing.T) {
-	correct, err := hex.DecodeString("5f21d7763b1ae8fc87db7dc993ddc50468765729411ba6b24906de15851a4abf")
+func TestLyra2re3(t *testing.T) {
+	correct, err := hex.DecodeString("c4f6e24baeccda5ffdcfa724e657cc74fedbfece23972109d58c5d3ba1ab0faf")
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	data := make([]byte, 80)
 	copy(data, []byte("test"))
-	result, err := Sum(data)
+	result, err := SumV3(data)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -26,12 +26,12 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-package lyra2rev2
+package lyra2rev3
 
 import (
+	"github.com/adamcollier1/lyra2rev3/sha3"
 	"github.com/aead/skein"
 	"github.com/dchest/blake256"
-	"github.com/bitgoin/lyra2rev2/sha3"
 )
 
 //Sum returns the result of Lyra2re2 hash.

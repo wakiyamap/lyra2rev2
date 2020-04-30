@@ -30,7 +30,7 @@
 //under Public Domain CC0 license
 //https://github.com/input-output-hk/scrypto/blob/master/COPYING
 
-package lyra2rev2
+package lyra2rev3
 
 import (
 	"encoding/binary"
