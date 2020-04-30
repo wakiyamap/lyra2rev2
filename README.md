@@ -23,7 +23,7 @@ import "github.com/adamcollier1/lyra2rev3"
 
 func main(){
     data := []byte{0x01,0x02}
-	result, err := lyra2rev2.SumV3(data)
+	result, err := lyra2rev3.SumV3(data)
 ...
 }
 ```
