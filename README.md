@@ -3,26 +3,15 @@
 [![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://raw.githubusercontent.com/bitgoin/lyra2rev2/LICENSE)
 
 
-# lyra2rev2 with bmw,cubuhash, and lyra2 
+# lyra2rev3
 
 ## Overview
 
-This  is Lyra2REv2 library used in Monacoin and some other altcoins.
-Lyra2Rev2 uses [bmw hash](https://www.mathematik.hu-berlin.de/~schliebn/dl/Blue-Midnight-Wish.pdf),
-[cubehash](https://en.wikipedia.org/wiki/CubeHash),[lyra2](https://en.wikipedia.org/wiki/Lyra2),
-which are also included in this library.
-
-## Requirements
-
-This requires
-
-* git
-* go 1.3+
-
+This  is Lyra2REv3 library used in Vertcoin
 
 ## Installation
 
-     $ go get github.com/bitgoin/lyra2rev2
+     $ go get github.com/adamcollier1/lyra2rev3
 
 
 ## Example
@@ -30,11 +19,11 @@ This requires
 
 ```go
 
-import "github.com/bitgoin/lyra2rev2"
+import "github.com/adamcollier1/lyra2rev3"
 
 func main(){
     data := []byte{0x01,0x02}
-	result, err := lyra2rev2.Sum(data)
+	result, err := lyra2rev2.SumV3(data)
 ...
 }
 ```
@@ -42,5 +31,3 @@ func main(){
 
 # Contribution
 Improvements to the codebase and pull requests are encouraged.
-
-
